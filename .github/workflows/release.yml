@@ -1,0 +1,67 @@
+name: Release
+
+# Déclenché par le push d'un tag de la forme RELEASE_X.Y.Z.W (ex : RELEASE_1.0.3.4)
+on:
+  push:
+    tags:
+      - 'RELEASE_*'
+
+permissions:
+  contents: write # nécessaire pour créer la release GitHub
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extraire la version du tag
+        id: version
+        shell: pwsh
+        run: |
+          $version = '${{ github.ref_name }}' -replace '^RELEASE_', ''
+          if ($version -notmatch '^\d+\.\d+\.\d+(\.\d+)?$') {
+            throw "Version invalide dans le tag '${{ github.ref_name }}'. Format attendu : RELEASE_X.Y.Z[.W]"
+          }
+          "version=$version" >> $env:GITHUB_OUTPUT
+          Write-Host "Version détectée : $version"
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      # Publie l'application en appliquant la version à l'assembly
+      # (AssemblyVersion / FileVersion / InformationalVersion dérivent de -p:Version)
+      # NB : PublishDir est relatif au dossier du .csproj et doit correspondre
+      # à PublishOutputDir du .wixproj (répertoire récolté par Heat)
+      - name: Publier l'application (version ${{ steps.version.outputs.version }})
+        run: |
+          dotnet publish src/MerlinManager/MerlinManager.csproj `
+            -c Release -r win-x64 --self-contained true `
+            -p:SatelliteResourceLanguages=none `
+            -p:Version=${{ steps.version.outputs.version }} `
+            -p:PublishDir=bin/Release/publish/
+
+      # Génère le MSI via le projet WiX ; BuildVersion alimente Package/@Version (Product.wxs)
+      - name: Générer l'installeur MSI
+        run: |
+          dotnet build src/MerlinManager.Installer/MerlinManager.Installer.wixproj `
+            -c Release -p:Platform=x64 `
+            -p:BuildVersion=${{ steps.version.outputs.version }}
+
+      - name: Téléverser le MSI en artefact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MerlinManager-${{ steps.version.outputs.version }}
+          path: src/MerlinManager.Installer/bin/x64/Release/MerlinManager.msi
+          if-no-files-found: error
+
+      - name: Créer la release GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: MerlinManager ${{ steps.version.outputs.version }}
+          generate_release_notes: true
+          files: src/MerlinManager.Installer/bin/x64/Release/MerlinManager.msi

@@ -8,6 +8,9 @@
     <CabinetCompressionLevel>high</CabinetCompressionLevel>
     <CabinetFileName>internal.cab</CabinetFileName>
     <EmbedCab>true</EmbedCab>
+    <!-- Version du MSI : surchargeable en ligne de commande via -p:BuildVersion=X.Y.Z.W (utilisé par la pipeline de release) -->
+    <BuildVersion Condition="'$(BuildVersion)' == ''">1.0.0.0</BuildVersion>
+    <DefineConstants>$(DefineConstants);BuildVersion=$(BuildVersion)</DefineConstants>
    </PropertyGroup>
 
   <ItemGroup>

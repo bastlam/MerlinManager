@@ -3,7 +3,7 @@
   <Package
     Name="MerlinManager"
     Manufacturer="Trax"
-    Version="1.0.3.2"
+    Version="$(var.BuildVersion)"
     UpgradeCode="7C2D1C78-2D15-4B9C-9E5D-2A9E0E2AF24B">
     <MajorUpgrade DowngradeErrorMessage="Une version plus recente de MerlinManager est deja installee." />
     <MediaTemplate EmbedCab="yes" />

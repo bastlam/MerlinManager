@@ -6,7 +6,10 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<SatelliteResourceLanguages>false</SatelliteResourceLanguages>
 		<ApplicationIcon>favicon.ico</ApplicationIcon>
-		<Version>1.0.3.3</Version>
+		<!-- Version par défaut pour les builds locaux ; la pipeline de release la surcharge via -p:Version=X.Y.Z.W -->
+		<Version>1.0.0.0</Version>
+		<FileVersion>$(Version)</FileVersion>
+		<AssemblyVersion>$(Version)</AssemblyVersion>
 		<UseWPF>true</UseWPF>
 	</PropertyGroup>
 
