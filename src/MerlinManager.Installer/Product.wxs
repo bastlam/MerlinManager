@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package
+    Name="MerlinManager"
+    Manufacturer="Trax"
+    Version="1.0.3.2"
+    UpgradeCode="7C2D1C78-2D15-4B9C-9E5D-2A9E0E2AF24B">
+    <MajorUpgrade DowngradeErrorMessage="Une version plus recente de MerlinManager est deja installee." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Icon Id="AppIcon" SourceFile="..\MerlinManager\favicon.ico" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon" />
+
+    <Feature Id="MainFeature" Title="MerlinManager" Level="1">
+      <ComponentGroupRef Id="ProductComponents" />
+      <ComponentRef Id="AppShortcut" />
+    </Feature>
+  </Package>
+
+  <Fragment>
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="MerlinManager" />
+    </StandardDirectory>
+  </Fragment>
+
+  <Fragment>
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="AppProgramsFolder" Name="Trax" />
+    </StandardDirectory>
+
+    <DirectoryRef Id="AppProgramsFolder">
+      <Component Id="AppShortcut" Guid="*">
+        <Shortcut
+          Id="StartMenuShortcut"
+          Name="MerlinManager"
+          Target="[INSTALLFOLDER]MerlinManager.exe"
+          WorkingDirectory="INSTALLFOLDER" />
+        <RemoveFolder Id="RemoveProgramMenuFolder" Directory="AppProgramsFolder" On="uninstall" />
+        <RegistryValue Root="HKCU" Key="Software\Trax\MerlinManager" Name="installed" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+  </Fragment>
+</Wix>

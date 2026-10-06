@@ -1,0 +1,182 @@
+<Window x:Class="MerlinManager.Dialogs.AddEntryDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Add Entry"
+    Height="640"
+        Width="600"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" Icon="/favicon.ico">
+    <Grid Margin="18">
+        <Border Background="{StaticResource CardBackgroundBrush}"
+                BorderBrush="{StaticResource CardBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="10"
+                Padding="16">
+            <Grid>
+                <Grid x:Name="DialogContentGrid">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Text="Titre" VerticalAlignment="Center" FontWeight="SemiBold" />
+                    <TextBox Grid.Row="1" x:Name="NameTextBox" MinWidth="420" Margin="0,6,0,12" />
+
+                    <TextBlock Grid.Row="2" Text="ID" VerticalAlignment="Center" FontWeight="SemiBold" />
+                    <TextBox Grid.Row="3" x:Name="IdTextBox" MinWidth="420" Margin="0,6,0,12" IsReadOnly="True" />
+
+                    <Grid x:Name="AudioSection" Grid.Row="5" Margin="0,0,0,12" Visibility="Collapsed">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Text="Audio" FontWeight="SemiBold" Margin="0,0,0,6" />
+                        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
+                            <RadioButton x:Name="RadioLocalFile"
+                                     Content="Fichier local"
+                                     GroupName="AudioSource"
+                                     IsChecked="True"
+                                     Margin="0,0,16,0"
+                                     Checked="RadioAudioSource_Checked" />
+                            <RadioButton x:Name="RadioYoutube"
+                                     Content="URL YouTube"
+                                     GroupName="AudioSource"
+                                     Checked="RadioAudioSource_Checked" />
+                        </StackPanel>
+                        <Grid x:Name="AudioFileRow" Grid.Row="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="AudioPathTextBox"
+                                 IsReadOnly="True"
+                                 MinWidth="220"
+                                 Margin="0,0,8,0"
+                                 Text="Pas d'audio sélectionné" />
+                            <Button Grid.Column="1"
+                                Content="Choisir Audio"
+                                Width="118"
+                                Height="32"
+                                Margin="0,0,8,0"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                Click="BrowseAudioButton_Click" />
+                            <Button Grid.Column="2"
+                                Content="Enlever"
+                                Width="92"
+                                Height="32"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                Click="ClearAudioButton_Click" />
+                        </Grid>
+                        <Grid x:Name="AudioYoutubeRow" Grid.Row="2" Visibility="Collapsed">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="YoutubeUrlTextBox"
+                                 MinWidth="220"
+                                 Margin="0,0,8,0" />
+                            <Button Grid.Column="1"
+                                Content="Obtenir les infos"
+                                Width="118"
+                                Height="32"
+                                Margin="0,0,8,0"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                Click="LoadYoutubeInfosButton_Click" />
+                            <Button Grid.Column="2"
+                                Content="Enlever"
+                                Width="92"
+                                Height="32"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                Click="ClearYoutubeButton_Click" />
+                        </Grid>
+                    </Grid>
+
+                    <Grid Grid.Row="7">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="260"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Border 
+                        Width="250"
+                        Height="250"
+                        BorderBrush="{StaticResource CardBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="8"
+                        Background="#FAFCFF"
+                        HorizontalAlignment="Left">
+                            <Grid>
+                                <Image x:Name="PreviewImage" Stretch="Uniform" />
+                                <TextBlock x:Name="NoImageText"
+                                   Text="Aucune image"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   Foreground="{StaticResource TextMutedBrush}" />
+                            </Grid>
+                        </Border>
+                        <Grid Grid.Column="1" Width="100">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <Button Grid.Row="1"
+                            Content="Choisir Image"
+                            Height="32"
+                            Margin="0,0,0,8"
+                            Style="{StaticResource PrimaryButtonStyle}"
+                            Click="BrowseButton_Click" />
+                            <Button Grid.Row="2"
+                            Content="Enlever"
+                            Height="32"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Click="ClearImageButton_Click" />
+                        </Grid>
+                    </Grid>
+
+                    <StackPanel Grid.Row="8"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Right"
+                            Height="32"
+                            Margin="0,16,0,0">
+                        <Button Content="Annuler"
+                            Width="94"
+                            IsCancel="True"
+                            Margin="0,0,8,0"
+                            Style="{StaticResource SecondaryButtonStyle}" />
+                        <Button Content="OK"
+                            Width="94"
+                            IsDefault="True"
+                            Style="{StaticResource PrimaryButtonStyle}"
+                            Click="OkButton_Click" />
+                    </StackPanel>
+                </Grid>
+                <Grid x:Name="LoadingOverlay" Background="Transparent" Panel.ZIndex="1" Visibility="Hidden">
+                    <Rectangle>
+                        <Rectangle.Fill>
+                            <VisualBrush Visual="{Binding ElementName=DialogContentGrid}" />
+                        </Rectangle.Fill>
+                        <Rectangle.Effect>
+                            <BlurEffect Radius="12" />
+                        </Rectangle.Effect>
+                    </Rectangle>
+                    <Border Background="#66FFFFFF" CornerRadius="8" />
+                    <ProgressBar Margin="20" Height="20" IsIndeterminate="True" VerticalAlignment="Center"/>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

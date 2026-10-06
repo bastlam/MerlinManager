@@ -1,0 +1,63 @@
+<Window x:Class="MerlinManager.Dialogs.TransfertDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Transfert playlist"
+        Height="200"
+        Width="460"
+        ResizeMode="NoResize"
+        Background="Transparent"
+        AllowsTransparency="True"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="None">
+    <Grid Margin="0" MouseLeftButtonDown="DialogSurface_MouseLeftButtonDown">
+        <Border Background="{StaticResource CardBackgroundBrush}"
+                BorderBrush="{StaticResource CardBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="10"
+                Padding="16">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                  <TextBlock Grid.Row="0"
+                      x:Name="DialogTitle"
+                      FontSize="14"
+                      FontWeight="SemiBold"
+                      Margin="0,0,0,8" />
+                <Border Grid.Row="1"
+                    Height="1"
+                    Background="{StaticResource CardBorderBrush}"
+                    Margin="0,0,0,12" />
+                <TextBlock x:Name="ActionText"
+                       Grid.Row="2"
+                       Margin="0,0,0,8"
+                       TextWrapping="Wrap" />
+                <TextBlock x:Name="ItemText"
+                       Grid.Row="3"
+                       Margin="0,0,0,12"
+                       TextWrapping="Wrap" />
+                <ProgressBar x:Name="TransferProgressBar"
+                         Grid.Row="4"
+                         Height="18"
+                         Minimum="0"
+                         IsIndeterminate="True"
+                         Margin="0,0,0,12" />
+                <Button x:Name="CloseButton"
+                    Grid.Row="5"
+                        Content="Fermer"
+                        Width="100"
+                        Height="34"
+                        HorizontalAlignment="Right"
+                        IsEnabled="False"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Click="CloseButton_Click" />
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
