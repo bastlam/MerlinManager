@@ -845,7 +845,9 @@ public partial class MainWindow : Window
         return true;
     }
 
-    private string GenerateDefaultId() => LibraryData.CustomItemIdPrefix + Guid.NewGuid().ToString();
+    //Remplacement par un vrai GUID
+    //private string GenerateDefaultId() => LibraryData.CustomItemIdPrefix + Guid.NewGuid().ToString();
+    private string GenerateDefaultId() => Misc.NewGuidStartingWith(LibraryData.CustomItemIdPrefix).ToString();
 
     #endregion
 

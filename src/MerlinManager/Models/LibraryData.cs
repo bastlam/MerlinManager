@@ -10,7 +10,7 @@ namespace MerlinManager.Models;
 
 public sealed class LibraryData
 {
-    public const string CustomItemIdPrefix = "MM-";
+    public const string CustomItemIdPrefix = "999999";
     public FolderNode RootFolder { get; set; } = new();
 
     public LibraryData()

@@ -215,7 +215,7 @@ namespace MerlinManager.Services
                     //File.WriteAllText("playlist_existing.json", jsonExisting);
 
 
-                    // On retire tous les éléments dont l'uuid commence par "MM-" (ce sont les éléments personnalisés de MerlinManager)
+                    // On retire tous les éléments dont l'uuid commence par CustomItemIdPrefix (ce sont les éléments personnalisés de MerlinManager)
                     items = items.Where(i => !i.Uuid.StartsWith(LibraryData.CustomItemIdPrefix)).ToList();
                     // On récupère le plus grand ID utilisé dans la playlist pour éviter les conflits avec les éléments personnalisés
                     var maxId = items.Max(i => i.Id);
@@ -223,7 +223,7 @@ namespace MerlinManager.Services
 
                     transfertStatus.CurrentAction = "Suppression des fichiers personnalisés...";
                     transfertProgress?.Invoke(transfertStatus);
-                    //On supprime tous les fichiers commencant par "MM-" dans le dossier de travail
+                    //On supprime tous les fichiers commencant par CustomItemIdPrefix dans le dossier de travail
                     var existingFiles = Directory.GetFiles(workingDirectory, LibraryData.CustomItemIdPrefix + "*.*");
                     existingFiles.ToList().ForEach(File.Delete);
 
@@ -326,7 +326,7 @@ namespace MerlinManager.Services
                         FavOrder = 0,
                         Type = 2, // Dossier
                         LimitTime = 0,
-                        AddTime = (uint)DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                        AddTime = 0,
                         Uuid = folder.Id,
                         Title = folder.Name
                     });
