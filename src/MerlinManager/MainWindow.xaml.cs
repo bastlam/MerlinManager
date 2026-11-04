@@ -1,6 +1,7 @@
 ﻿using MerlinManager.Dialogs;
 using MerlinManager.Models;
 using MerlinManager.Services;
+using MerlinManager.Services.Speaker;
 using MerlinManager.Utils;
 using Microsoft.Win32;
 using System.IO;
@@ -14,6 +15,7 @@ public partial class MainWindow : Window
 {
     private readonly LibraryStorageService _storageService = new();
     private TransfertDialog _transfertDialog;
+    private string _merlinUsername;
 
     public System.Collections.ObjectModel.ObservableCollection<FolderNode> Folders { get; } = new();
 
@@ -82,20 +84,170 @@ public partial class MainWindow : Window
 
         if (dialog.ShowDialog(this) == true)
         {
-            var selectedPlaylistPath = dialog.FileName;
-
-            //Récupération des données de la playlist sélectionnée
-            var playlistRootNode = MerlinPlaylistService.ExtractFoldersTree(selectedPlaylistPath);
-
-            //On merge les dossiers extraits avec ceux déjà présents dans l'application
-            var rootFolder = LibraryData.CreateRoot;
-            rootFolder.Subfolders = new System.Collections.ObjectModel.ObservableCollection<FolderNode>(Folders);
-            rootFolder = await rootFolder.MergeAsync(playlistRootNode);
-
-            InitializeFoldersView(rootFolder.Subfolders);
-
-            SaveData();
+            await ImportPlaylistFileAsync(dialog.FileName);
         }
+    }
+
+    private async Task ImportPlaylistFileAsync(string playlistPath)
+    {
+        //Récupération des données de la playlist sélectionnée
+        var playlistRootNode = MerlinPlaylistService.ExtractFoldersTree(playlistPath);
+
+        //On merge les dossiers extraits avec ceux déjà présents dans l'application
+        var rootFolder = LibraryData.CreateRoot;
+        rootFolder.Subfolders = new System.Collections.ObjectModel.ObservableCollection<FolderNode>(Folders);
+        rootFolder = await rootFolder.MergeAsync(playlistRootNode);
+
+        InitializeFoldersView(rootFolder.Subfolders);
+
+        SaveData();
+    }
+
+    private async void SpeakerWifiTestMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        var ssid = WifiService.SavedSpeakerSsid;
+        if (!string.IsNullOrEmpty(ssid))
+        {
+            var reuse = MessageBox.Show(this, $"Utiliser le Wi-Fi enregistré « {ssid} » ?\n\nNon : se reconnecter au compte Merlin pour récupérer à nouveau les identifiants Wi-Fi.",
+                "Wi-Fi de l'enceinte", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+            if (reuse == MessageBoxResult.Cancel)
+            {
+                return;
+            }
+            if (reuse == MessageBoxResult.No)
+            {
+                ssid = null;
+            }
+        }
+
+        if (string.IsNullOrEmpty(ssid))
+        {
+            ssid = await FetchSpeakerWifiFromApiAsync();
+            if (string.IsNullOrEmpty(ssid))
+            {
+                return;
+            }
+        }
+
+        if (MessageBox.Show(this, "Mettez l'enceinte en mode Wifi / Transfert (« Connexion Wifi en cours » affiché sur l'écran), puis validez.\n\nLe PC sera déconnecté d'internet pendant l'opération.",
+            "Connexion à l'enceinte", MessageBoxButton.OKCancel, MessageBoxImage.Information) != MessageBoxResult.OK)
+        {
+            return;
+        }
+
+        var downloadedPlaylistPath = Path.Combine(LibraryStorageService.DataDirectory, "speaker-playlist.bin");
+        string summary;
+        try
+        {
+            summary = await Task.Run(() => ReadSpeakerAsync(ssid, downloadedPlaylistPath));
+        }
+        catch (Exception ex)
+        {
+            TransfertProgress(new TransfertStatus { DialogTitle = "Connexion à l'enceinte", TransfertCompleted = true, TransfertError = ex.Message });
+            return;
+        }
+
+        if (MessageBox.Show(this, $"{summary}\n\nImporter la playlist de l'enceinte dans la bibliothèque ?", "Enceinte Merlin",
+            MessageBoxButton.YesNo, MessageBoxImage.Information) == MessageBoxResult.Yes)
+        {
+            await ImportPlaylistFileAsync(downloadedPlaylistPath);
+        }
+    }
+
+    /// <summary>
+    /// Demande les identifiants Merlin, récupère le SSID/mot de passe du point d'accès de l'enceinte via l'API
+    /// et enregistre le profil Wi-Fi dans Windows. Renvoie le SSID, ou null si annulé.
+    /// </summary>
+    private async Task<string> FetchSpeakerWifiFromApiAsync()
+    {
+        var loginDialog = new MerlinLoginDialog(_merlinUsername) { Owner = this };
+        if (loginDialog.ShowDialog() != true)
+        {
+            return null;
+        }
+        _merlinUsername = loginDialog.Username;
+
+        try
+        {
+            using var api = new MerlinApiClient();
+            await api.LoginAsync(loginDialog.Username, loginDialog.Password);
+            var synchro = await api.CreateSynchroAsync();
+
+            try
+            {
+                await api.CloseSynchroAsync(synchro.Id);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Clôture de la synchro {synchro.Id} impossible : {ex.Message}");
+            }
+
+            if (string.IsNullOrEmpty(synchro.Ssid) || string.IsNullOrEmpty(synchro.Password))
+            {
+                MessageBox.Show(this, "L'API n'a pas renvoyé d'identifiants Wi-Fi. L'enceinte est-elle bien associée à ce compte ?", "Compte Merlin", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return null;
+            }
+
+            // Playlist au format JSON telle que fournie par le serveur, conservée pour étudier le format attendu par l'enceinte
+            if (!string.IsNullOrEmpty(synchro.PlaylistText))
+            {
+                await File.WriteAllTextAsync(Path.Combine(LibraryStorageService.DataDirectory, "api-playlist.json"), synchro.PlaylistText);
+            }
+
+            await WifiService.AddProfileAsync(synchro.Ssid, synchro.Password);
+            WifiService.SavedSpeakerSsid = synchro.Ssid;
+            return synchro.Ssid;
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "Compte Merlin", MessageBoxButton.OK, MessageBoxImage.Error);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Test en lecture seule : connexion au Wi-Fi de l'enceinte, lecture des informations et téléchargement de playlist.bin.
+    /// </summary>
+    private async Task<string> ReadSpeakerAsync(string ssid, string playlistDestinationPath)
+    {
+        const string dialogTitle = "Connexion à l'enceinte";
+        void Report(string action) => TransfertProgress(new TransfertStatus { DialogTitle = dialogTitle, AutoClose = true, CurrentAction = action });
+
+        Report("Connexion au Wi-Fi de l'enceinte...");
+        var previousSsid = await WifiService.GetConnectedSsidAsync();
+        string summary;
+        try
+        {
+            await WifiService.ConnectToSpeakerAsync(ssid);
+
+            using var speaker = new MerlinSpeakerClient();
+            Report("Connexion à l'enceinte...");
+            await speaker.ConnectAsync();
+            await speaker.PingAsync();
+
+            Report("Lecture des informations...");
+            var firmware = await speaker.GetFirmwareVersionAsync();
+            var available = await speaker.GetAvailableSpaceAsync();
+            var total = await speaker.GetTotalSizeAsync();
+
+            Report("Téléchargement de playlist.bin...");
+            long playlistSize;
+            await using (var file = File.Create(playlistDestinationPath))
+            {
+                await speaker.GetFileAsync("playlist.bin", file);
+                playlistSize = file.Length;
+            }
+
+            summary = $"Firmware : {firmware}\nEspace libre : {available}\nTaille totale : {total}\nplaylist.bin : {playlistSize} octets";
+        }
+        finally
+        {
+            Report("Reconnexion au Wi-Fi précédent...");
+            await WifiService.ReconnectAsync(previousSsid);
+        }
+
+        TransfertProgress(new TransfertStatus { DialogTitle = dialogTitle, AutoClose = true, TransfertCompleted = true, TransfertSucceeded = true });
+        return summary;
     }
 
     private void QuitMenuItem_Click(object sender, RoutedEventArgs e)

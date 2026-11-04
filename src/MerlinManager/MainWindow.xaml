@@ -52,6 +52,9 @@
                 <Separator />
                 <MenuItem Header="Quitter" Click="QuitMenuItem_Click" />
             </MenuItem>
+            <MenuItem Header="Enceinte">
+                <MenuItem Header="📶 Lire l'enceinte en Wi-Fi (prototype)..." Click="SpeakerWifiTestMenuItem_Click" />
+            </MenuItem>
         </Menu>
 
         <Grid Margin="6 0" Grid.Row="1">
