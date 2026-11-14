@@ -49,6 +49,7 @@
             <MenuItem Header="Fichier">
                 <MenuItem Header="🚀 Initialiser dossiers" Click="InitializeFoldersMenuItem_Click" />
                 <MenuItem Header="📁 Dossier de stockage..." Click="SelectStorageFolderMenuItem_Click" />
+                <MenuItem Header="📶 Adresse MAC du boîtier..." Click="SetMacMenuItem_Click" />
                 <Separator />
                 <MenuItem Header="Quitter" Click="QuitMenuItem_Click" />
             </MenuItem>

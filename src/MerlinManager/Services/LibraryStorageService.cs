@@ -10,6 +10,7 @@ public sealed class LibraryStorageService
 {
     private const string RegistryRootPath = "Software\\MerlinManager";
     private const string RegistryValueName = "DataDirectory";
+    private const string RegistryMacValueName = "SpeakerMac";
     private const string JsonFileName = "tree.json";
     private readonly JsonSerializerOptions _serializerOptions = new()
     {
@@ -61,6 +62,19 @@ public sealed class LibraryStorageService
         DataDirectory = normalizedPath;
         Directory.CreateDirectory(normalizedPath);
         WriteDataDirectoryToRegistry(normalizedPath);
+    }
+
+    /// <summary>Adresse MAC WiFi (STA) du boîtier Merlin, utilisée pour (dé)chiffrer les playlists v3. Peut être null.</summary>
+    public static string GetSpeakerMac()
+    {
+        using var key = Registry.CurrentUser.OpenSubKey(RegistryRootPath);
+        return key?.GetValue(RegistryMacValueName) as string;
+    }
+
+    public static void SetSpeakerMac(string mac)
+    {
+        using var key = Registry.CurrentUser.CreateSubKey(RegistryRootPath);
+        key?.SetValue(RegistryMacValueName, mac ?? string.Empty, RegistryValueKind.String);
     }
 
     public LibraryData Load()

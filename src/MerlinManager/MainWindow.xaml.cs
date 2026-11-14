@@ -84,8 +84,28 @@ public partial class MainWindow : Window
         {
             var selectedPlaylistPath = dialog.FileName;
 
-            //Récupération des données de la playlist sélectionnée
-            var playlistRootNode = MerlinPlaylistService.ExtractFoldersTree(selectedPlaylistPath);
+            // Les playlists récentes (v3) sont chiffrées : on a besoin de la MAC du boîtier.
+            var mac = EnsureSpeakerMac(selectedPlaylistPath);
+            if (mac is null && MerlinPlaylistService.DetectVersion(selectedPlaylistPath) == PlaylistVersion.V3Encrypted)
+            {
+                return; // saisie annulée
+            }
+
+            FolderNode playlistRootNode;
+            try
+            {
+                playlistRootNode = MerlinPlaylistService.ExtractFoldersTree(selectedPlaylistPath, mac);
+            }
+            catch (System.Security.Cryptography.CryptographicException)
+            {
+                MessageBox.Show(this, "Impossible de déchiffrer la playlist. Vérifiez l'adresse MAC du boîtier.", "Erreur", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, $"Impossible de lire la playlist : {ex.Message}", "Erreur", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
 
             //On merge les dossiers extraits avec ceux déjà présents dans l'application
             var rootFolder = LibraryData.CreateRoot;
@@ -96,6 +116,43 @@ public partial class MainWindow : Window
 
             SaveData();
         }
+    }
+
+    /// <summary>
+    /// Retourne la MAC du boîtier à utiliser pour la playlist indiquée. Pour une playlist v3 chiffrée,
+    /// demande la MAC à l'utilisateur si elle n'est pas encore enregistrée. Retourne null si la playlist
+    /// n'est pas chiffrée (v2) ou si l'utilisateur annule la saisie.
+    /// </summary>
+    private string EnsureSpeakerMac(string playlistPath)
+    {
+        if (MerlinPlaylistService.DetectVersion(playlistPath) != PlaylistVersion.V3Encrypted)
+        {
+            return null;
+        }
+
+        var mac = LibraryStorageService.GetSpeakerMac();
+        if (!string.IsNullOrWhiteSpace(mac))
+        {
+            return mac;
+        }
+
+        return PromptForMac();
+    }
+
+    private string PromptForMac()
+    {
+        var dialog = new MacInputDialog(LibraryStorageService.GetSpeakerMac()) { Owner = this };
+        if (dialog.ShowDialog() != true)
+        {
+            return null;
+        }
+        LibraryStorageService.SetSpeakerMac(dialog.Mac);
+        return dialog.Mac;
+    }
+
+    private void SetMacMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        PromptForMac();
     }
 
     private void QuitMenuItem_Click(object sender, RoutedEventArgs e)
@@ -395,11 +452,18 @@ public partial class MainWindow : Window
 
             var selectedPlaylistPath = dialog.FileName;
 
+            // Playlist v3 chiffrée : MAC du boîtier requise.
+            var mac = EnsureSpeakerMac(selectedPlaylistPath);
+            if (mac is null && MerlinPlaylistService.DetectVersion(selectedPlaylistPath) == PlaylistVersion.V3Encrypted)
+            {
+                return; // saisie annulée
+            }
+
             var libraryData = new LibraryData();
             libraryData.RootFolder.Subfolders = new System.Collections.ObjectModel.ObservableCollection<FolderNode>(Folders);
 
 
-            Task.Run(() => MerlinPlaylistService.ConvertToMerlinPlaylistAsync(libraryData, selectedPlaylistPath, (transfertStatus) => TransfertProgress(transfertStatus)));
+            Task.Run(() => MerlinPlaylistService.ConvertToMerlinPlaylistAsync(libraryData, selectedPlaylistPath, mac, (transfertStatus) => TransfertProgress(transfertStatus)));
         }
     }
 
